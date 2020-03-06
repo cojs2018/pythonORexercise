@@ -49,17 +49,23 @@ def simplex(c, A, b):
     cond = np.array([[-1]], np.float) #Conditional value
     i = 0
     ent = 0 #entering value
+    ent_prev = 0
     leave = 0
     N = A
     prev_z = -1
     #print(all_less_than(cond, 0).all())
     while all_less_than(cond, 0).all() == True and i < 4:
+        ent = 0
+        ent_prev = 0
         print(D)
-        Dinv = inv(D)
+        print(D.I)
+        Dinv = D.I #inverse of D
         for j in range(ma):
             z_xj = c_D.T * Dinv * N[:, j] - c[j]
+            print(z_xj)
             if all_less_than(z_xj, prev_z).all() == True and all_less_than(z_xj, 0).all() == True:
                  prev_z = z_xj[0, 0]
+                 ent_prev = ent
                  ent = j
             elif all_less_than(z_xj, 0).any() == False:
                  cond = z_xj
@@ -74,11 +80,19 @@ def simplex(c, A, b):
                     leave = k
         else:
             break
-        #Swap entering and leaving value
-        tmp1 = D[:, leave]
-        tmp2 = N[:, ent]
-        D[:, leave] = tmp2
-        N[:, ent] = tmp1
+        #Swap entering and leaving values
+        if N[leave, ent] == 0:
+            ent = ent_prev
+        D[:, leave], N[:, ent] = N[:, ent], D[:, leave]
+        c_D[leave], c[ent] = c[ent], c_D[leave]
+       # tmp1 = D[:, leave]
+        #tmp2 = N[:, ent]
+        #D[:, leave] = tmp2
+        #N[:, ent] = tmp1
+        #tmp3 = c_D[leave]
+        #tmp4 = c[ent]
+        #c_D[leave] = tmp4
+        #c[ent] = tmp3
         i = i + 1
     x_D = Dinv * b
     z = c_D * x_D
@@ -95,19 +109,21 @@ def inv(A): # Inverse of matrix A
         Echilon_form = A
         for i in range(na-1):
             a_ii = Echilon_form[i, i]
-            Echilon_form[i, :] = (1/a_ii) * Echilon_form[i, :]
-            for j in range(i+1, na):
-                a_ij = Echilon_form[i, j]
-                Echilon_form[j, :] = (-1 * a_ij/a_ii) * Echilon_form[i, :] + Echilon_form[j, :]
-                Id[j, :] = (-1 * a_ij/a_ii) * Id[i, :] + Id[j, :]
+            if a_ii != 0: #If and only if a_ii != 0, else skip row
+                Echilon_form[i, :] = (1/a_ii) * Echilon_form[i, :]
+                for j in range(i+1, na):
+                    a_ij = Echilon_form[j, i]
+                    Echilon_form[j, :] = (-1 * a_ij/a_ii) * Echilon_form[i, :] + Echilon_form[j, :]
+                    Id[j, :] = (-1 * a_ij/a_ii) * Id[i, :] + Id[j, :]
         Ainv = Id
         for i2 in range(na-1, 1, -1):
             a_ii = Echilon_form[i2, i2]
-            Echilon_form[i2, :] = (1/a_ii) * Echilon_form[i2, :]
-            for j2 in range(na-2, 0, -1):
-                a_ij = Echilon_form[i2, j2]
-                Echilon_form[j2, :] = (-1 * a_ij/a_ii) * Echilon_form[i2, :] + Echilon_form[j2, :]
-                Ainv[j2, :] = (-1 * a_ij/a_ii) * Ainv[i2, :] + Ainv[j2, :]
+            if a_ii != 0: #If and only if a_ii != 0, else skip row
+                Echilon_form[i2, :] = (1/a_ii) * Echilon_form[i2, :]
+                for j2 in range(na-2, 0, -1):
+                    a_ij = Echilon_form[j2, i2]
+                    Echilon_form[j2, :] = (-1 * a_ij/a_ii) * Echilon_form[i2, :] + Echilon_form[j2, :]
+                    Ainv[j2, :] = (-1 * a_ij/a_ii) * Ainv[i2, :] + Ainv[j2, :]
         return Ainv
 
 def all_less_than(A, num): #A is multidimentional array, num is scalar value
